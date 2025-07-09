@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ENTRENA COMO UNA CHICA</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gradient-to-b from-pink-100 via-pink-200 to-purple-300 min-h-screen font-sans text-gray-900 p-4">
+  <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-6">
+    <!-- Header -->
+    <h1 class="text-4xl font-extrabold text-pink-600 text-center uppercase">💪🏽 Entrena como una chica 💅🏼</h1>
+    <p class="text-center text-pink-500 italic mt-1">Spoiler: significa con ovarios, cabeza y fuego 🔥🧠🍑</p>
+    <p class="text-center text-sm text-purple-700 mt-1">By: Anita Dinamita 💥</p>
+    <div class="w-20 h-1 bg-pink-500 mx-auto mt-4 mb-6 rounded-full"></div>
+
+    <!-- Historial toggle + chart -->
+    <div class="text-center mb-4">
+      <button id="toggle-history" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded">📅 Mostrar historial</button>
+      <div id="historial" class="mt-4 text-left text-sm text-gray-800 bg-pink-100 p-3 rounded hidden"></div>
+      <canvas id="progressChart" class="mt-4 hidden"></canvas>
+    </div>
+
+    <!-- Formulario -->
+    <form id="training-form" class="space-y-4">
+      <div id="location-group">
+        <label class="block text-pink-700">🏠 ¿Dónde vas a entrenar hoy?</label>
+        <select id="location" class="w-full p-2 rounded bg-pink-50">
+          <option>Casa sin material</option>
+          <option>Habitación con bandas</option>
+          <option>Gimnasio con máquinas</option>
+        </select>
+      </div>
+      <div id="goal-group">
+        <label class="block text-pink-700">🎯 ¿Qué quieres trabajar hoy?</label>
+        <select id="goal" class="w-full p-2 rounded bg-pink-50">
+          <option>Tren inferior</option>
+          <option>Tren superior</option>
+          <option>Glúteos</option>
+          <option>Abdomen</option>
+          <option>Cuerpo entero</option>
+          <option>Movilidad</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-pink-700">🧗‍♀️ ¿Cuál es tu nivel?</label>
+        <select id="level" class="w-full p-2 rounded bg-pink-50">
+          <option>Principiante</option>
+          <option>Intermedio</option>
+          <option>Avanzado</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-pink-700">⏱ ¿Cuánto tiempo tienes hoy?</label>
+        <select id="time" class="w-full p-2 rounded bg-pink-50">
+          <option>10</option>
+          <option>15</option>
+          <option>30</option>
+          <option>45</option>
+          <option>60</option> 
+        </select>
+      </div>
+      <div>
+        <label class="block text-pink-700">🔋 Nivel de energía y motivación (1 a 5)</label>
+        <select id="energy" class="w-full p-2 rounded bg-pink-50">
+          <option>1</option>
+          <option>2</option>
+          <option>3</option>
+          <option>4</option>
+          <option>5</option>
+        </select>
+      </div>
+      <button type="submit" class="w-full mt-4 bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-4 rounded">
+        Diseñar entrenamiento
+      </button>
+    </form>
+
+    <!-- Sugerencia sesión anterior -->
+    <div id="suggestion" class="mt-6 text-sm text-purple-800"></div>
+
+    <!-- Resultados -->
+    <div id="output" class="mt-6 hidden space-y-6">
+      <div id="activation-plan"></div>
+      <div id="main-plan"></div>
+      <div id="express-plan"></div>
+      <div id="progression-plan"></div>
+      <div id="challenge-plan"></div>
+
+      <!-- Feedback -->
+      <div id="feedback" class="mt-6">
+        <h3 class="text-lg font-semibold text-pink-600">📝 ¿Qué hiciste hoy?</h3>
+        <div id="exercise-checklist" class="space-y-1 mt-2"></div>
+        <label class="block mt-3">¿Cómo te sentiste al acabar?</label>
+        <select id="feeling" class="w-full bg-pink-50 p-2 rounded">
+          <option>1 - Fatal</option>
+          <option>2 - Cansada</option>
+          <option>3 - Normal</option>
+          <option>4 - Bien</option>
+          <option>5 - Fuerte</option>
+        </select>
+        <button id="save-feedback" class="mt-4 bg-green-500 text-white px-3 py-1 rounded">Guardar experiencia</button>
+      </div>
+
+      <!-- Exportar / Importar -->
+      <div class="mt-6 space-y-2 text-center">
+        <button onclick="exportarMemoria()" class="bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-1 rounded">📤 Exportar datos</button>
+        <input type="file" id="importador" class="mt-2 mx-auto block" />
+        <button onclick="importarMemoria()" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-1 rounded">📥 Importar datos</button>
+      </div>
+
+      <!-- Guardar sesión -->
+      <div class="text-center">
+        <button id="save-session" class="mt-6 bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded">
+          💾 Guardar esta sesión
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // Utilidades
+  function shuffle(arr){ return arr.slice().sort(()=>Math.random()-0.5) }
+  function getAlternative(goal){
+    if(goal==='Tren inferior') return 'Tren superior + abdomen';
+    if(goal==='Tren superior') return 'Glúteos o movilidad';
+    if(goal==='Glúteos')     return 'Cuerpo entero';
+    if(goal==='Abdomen')     return 'Movilidad';
+    if(goal==='Movilidad')   return 'Cuerpo entero';
+    return 'Cuerpo entero';
+  }
+
+  // Ejercicios por entorno, nivel y objetivo (resumido aquí)
+  const exerciseBankEnv = {
+    'Casa sin material': {
+      'Principiante': {
+        'Tren inferior': ['Sentadilla al aire 3x15','Zancada estática 3x10/pierna'],
+        'Tren superior': ['Remo con toalla 3x12','Flexión de pared 3x10','Dips en banco 3x12'],
+        'Glúteos':      ['Puente de glúteo 3x15','Abducción mariposa 3x20','Hip Thrust mariposa 3x15'],
+        'Abdomen':      ['Plancha rodillas 3x20s','Bird Dog 3x12','Marcha en sitio 3x30s'],
+        'Cuerpo entero':['Marcha en sitio 3x30s','Jumping Jacks suaves 3x20'],
+        'Movilidad':    ['Gato-vaca x10','90/90 x30s']
+      },
+      'Intermedio': {
+        'Tren inferior': ['Sentadilla al aire 4x15','Zancada caminando 4x12/pierna','Peso muerto a una pierna 3x12/pierna','Puente de glúteo 4x15','Sentadilla búlgara asistida 3x10/pierna','Elevación de talones 4x20'],
+        'Tren superior': ['Flexión con rodillas elevadas 3x12','Remo invertido 3x12','Dips en banco 3x15'],
+        'Glúteos': ['Hip Thrust a una pierna 3x12','Patada glúteo en cuadrupedia 3x15','Abducción lateral 3x20','Hip Thrust Mariposa 4x15'],
+        'Abdomen': ['Crunch bicicleta 3x20','Plancha 3x30s','Levantamiento de piernas 3x15'],
+        'Cuerpo entero': ['Burpees 3x10','Mountain climbers 3x30s','Jump squat 3x12'],
+        'Movilidad': ['Estiramiento isquiotibiales 3x30s','Rotaciones de cadera x10']
+    },
+      'Avanzado': {
+        'Tren inferior': ['Pistol squat asistida 4x8/pierna','Zancada búlgara 4x10/pierna','Peso muerto a una pierna 4x12/pierna','Puente de glúteo con una pierna 4x12/pierna','Sentadilla con salto 3x12','Elevación de talones a una pierna 4x15','Goblet squat improvisado 4x12','Cossack squat 3x10/pierna'],
+        'Tren superior': ['Flexión declinada 3x12','Remo con toalla con pie elevado 3x12','Fondos en banco con piernas elevadas 3x12'],
+        'Glúteos': ['Hip Thrust con pie en banco 3x12','Patada glúteo en polea improvisada 3x15','Abducción con banda y salto 3x15', 'Hip Thrust Mariposa 4x20'],
+        'Abdomen': ['Plancha lateral 3x30s/pierna','V-Sit-ups 3x15','Hanging leg raises 3x12'],
+        'Cuerpo entero': ['Burpee con salto de cajón 3x8','Thruster con peso corporal 3x12','Jumping lunges 3x12/pierna'],
+      'Movilidad': ['Estiramiento psoas 3x30s/pierna','Puente dinámico 3x10']
+    }
+  },
+    'Habitación con bandas': {
+      'Principiante': {
+        'Tren inferior': ['Sentadilla con banda 3x15','Puente de glúteo con banda 3x15'],
+        'Tren superior': ['Remo con banda 3x12','Press hombros con banda 3x12','Dips en banco 3x12'],
+        'Glúteos':      ['Patada glúteo con banda 3x20','Abducción lateral con banda 3x20','Hip Thrust mariposa 3x15'],
+        'Abdomen':      ['Crunch con banda 3x15','Plancha con banda 3x20s'],
+        'Cuerpo entero':['Thruster con banda 3x12','Jumping Jacks con banda 3x20'],
+        'Movilidad':    ['Gato-vaca x10','90/90 x30s']
+      },
+      'Intermedio': {
+        'Tren inferior': ['Sentadilla con banda 4x15','Zancada estática con banda 4x12/pierna','Puente glúteo con banda 4x15','Elevación de talones con banda 4x20'],
+        'Tren superior': ['Remo con banda 4x12','Press hombros con banda 4x12','Dips en banco 4x12'],
+        'Glúteos': ['Patada glúteo con banda 4x20','Hip Thrust con banda 4x15','Abducción lateral con banda 4x20'],
+        'Abdomen': ['Crunch con banda 4x15','Plancha con banda 4x30s','Mountain climbers con banda 4x30s'],
+        'Cuerpo entero': ['Thruster con banda 4x12','Jumping Jacks con banda 4x20'],
+        'Movilidad': ['Gato-vaca x15','90/90 x45s','Rotaciones de cadera x12'
+      ]
+    },
+    'Avanzado': {
+      'Tren inferior': ['Pistol squat asistida con banda 4x8/pierna','Sentadilla búlgara con banda 4x10/pierna','Puente glúteo con una pierna y banda 4x12/pierna','Sentadilla con salto con banda 4x12'],
+      'Tren superior': ['Remo alto con banda 4x12','Press militar con banda 4x12', 'Fondos en banco con banda 4x12'],
+      'Glúteos': ['Hip Thrust en una pierna con banda 4x12/pierna','Patada glúteo con banda y salto 4x15','Abducción lateral con salto de banda 4x15'],
+      'Abdomen': ['Plancha lateral con banda 4x30s/pierna','V-Ups con banda 4x15','Crunch bicicleta con banda 4x20'],
+      'Cuerpo entero': ['Burpees con salto y banda 4x10','Thruster con banda a una pierna 4x12','Mountain climbers con banda 4x30s'],
+      'Movilidad': ['Estiramiento de psoas con banda 4x30s','Puente dinámico con banda 4x12','Rotaciones dinámicas de cadera x12']
+    }
+  },
+
+    'Gimnasio con máquinas': {
+      'Principiante': {
+        'Tren inferior': ['Prensa de piernas 3x15','Extensión de cuádriceps 3x12'],
+        'Tren superior': ['Jalón al pecho 3x12','Press banca mancuernas 3x10','Dips en banco 3x12'],
+        'Glúteos':      ['Abducción cadera máquina 3x15','Hip Thrust en smith 3x12','Hip Thrust mariposa 3x15'],
+        'Abdomen':      ['Crunch máquina 3x15','Plancha 3x20s'],
+        'Cuerpo entero':['Kettlebell swing 3x15','Burpee con salto 3x10'],
+        'Movilidad':    ['Gato-vaca x10','90/90 x30s']
+      },
+      'Intermedio': {
+        'Tren inferior': ['Prensa de piernas 4x15','Curl femoral tumbado 4x12','Extensión de cuádriceps 4x12'],
+        'Tren superior': ['Jalón al pecho 4x12','Press banca máquina 4x10','Remo sentado 4x12'],
+        'Glúteos': ['Hip Thrust en Smith 4x12','Abducción cadera máquina 4x15','Patada glúteo máquina 4x20'],
+        'Abdomen': ['Crunch máquina 4x15','Plancha en bosu 4x30s','Elevación de piernas colgado 4x12'],
+        'Cuerpo entero': ['Kettlebell swing 4x15','Burpee con caja 4x10','Thruster con barra 4x12'],
+        'Movilidad': ['Gato-vaca x15','90/90 x45s','Rotaciones de tronco x12']
+    },
+      'Avanzado': {
+        'Tren inferior': ['Sentadilla en máquina hack 4x12','Peso muerto rumano 4x12', 'Zancada búlgara con mancuernas 4x10/pierna'],
+        'Tren superior': ['Press banca barra 4x10','Dominadas asistidas 4x8','Remo con barra T 4x12'],
+        'Glúteos': ['Hip Thrust con barra 4x12','Abducción de cadera en máquina 4x15','Patada glúteo en polea baja 4x15'],
+        'Abdomen': ['Crunch en banco declinado 4x15','Plancha con apoyo alterno 4x30s','Levantamiento de rodillas en paralelas 4x12'],
+        'Cuerpo entero': ['Clean and press 4x8','Burpee con salto de cajón 4x10','Thruster con barra 4x12'],
+        'Movilidad': ['Estiramiento dinámico de isquiotibiales 4x30s','Rotación de columna en banco 4x12','Estiramiento de psoas 4x30s'
+      ]
+    }
+    },
+  };
+
+  // Explicaciones
+  const exerciseInfo = {
+    'Marcha en sitio 3x30s': 'Levanta las rodillas alternas sin avanzar, mantén core activo.',
+    'Bird Dog 3x12':         'En cuadrupedia, extiende brazo y pierna contrarios, mantén core firme.',
+    'Hip Thrust mariposa 3x15':'Boca arriba, plantas juntas; eleva cadera apretando glúteos.',
+    'Dips en banco 3x12':    'Apoya manos en banco, baja cuerpo con codos pegados al torso.',
+    'Crunch con banda 3x15': 'Boca arriba, banda bajo pies; haz crunch elevando hombros.',
+    'V-Sit-ups': 'Acuéstate boca arriba con brazos y piernas extendidos. Contrae el core y eleva simultáneamente el torso y las piernas formando una “V”, acercando manos a pies. Mantén la espalda recta y baja controlado sin tocar suelo.',
+    'Respiración nasal profunda':'Inhala profundamente por la nariz expandiendo abdomen, exhala controlado por la boca manteniendo el core firme y repite con ritmo constante.',
+    'Plancha rodillas': 'En posición de plancha apoyando antebrazos y rodillas, alinea cabeza, hombros y cadera y mantén el core activo durante toda la serie.',
+    'Sentadilla al aire': 'Párate con los pies al ancho de hombros, baja cadera como si te sentaras, mantén rodillas alineadas con los pies y sube apretando glúteos.',
+    'Zancada estática': 'Da un gran paso adelante, baja ambas rodillas hasta 90°, empuja con el talón delantero para volver a la posición inicial.',
+    'Flexión de rodillas': 'En posición de plancha con rodillas apoyadas, baja el pecho manteniendo el core firme y sube estirando brazos.',
+    'Remo invertido': 'Colócate debajo de una barra, coge con manos al ancho de hombros y tira del pecho hacia la barra manteniendo el cuerpo recto.',
+    'Fondos en banco': 'Manos apoyadas detrás en el banco, flexiona codos manteniéndolos cerca del torso y extiende los brazos para subir.',
+    'Puente de glúteo': 'Tumbado boca arriba con plantas apoyadas, eleva cadera apretando glúteos y baja controlado sin apoyar lumbares.',
+    'Patada glúteo en cuadrupedia': 'En cuatro apoyos, extiende una pierna hacia atrás y arriba manteniendo la rodilla flexionada, vuelve y alterna.',
+    'Abducción lateral': 'De pie o tumbado de lado, eleva lateralmente la pierna manteniendo el cuerpo alineado y baja sin apoyar.',
+    'Crunch bicicleta': 'Tumbado boca arriba, lleva codo y rodilla opuestos acercándolos mientras pedaleas en el aire.',
+    'Plancha': 'Apoya antebrazos y pies, mantén cuerpo recto como tabla, aprieta core y glúteos durante toda la serie.',
+    'Levantamiento de piernas': 'Tumbado boca arriba, eleva piernas juntas manteniéndolas rectas hasta 90° y baja controlando el descenso.',
+    'Burpees': 'Desde de pie, agáchate, pasa a plancha, haz un push-up, vuelve pies bajo caderas y salta explosivamente.',
+    'Mountain climbers': 'En plancha alta, lleva rodillas alternas al pecho de forma rápida mientras mantienes el core firme.',
+    'Jumping jacks': 'De pie, salta abriendo piernas y brazos lateralmente y vuelve a posición inicial en cada repetición.',
+    'Estiramiento isquiotibiales': 'Siéntate con piernas extendidas, inclínate desde la cadera hasta notar el estiramiento en la parte posterior.',
+    'Rotaciones de cadera': 'De pie, manos en cintura, haz círculos amplios con la pelvis en ambas direcciones.',
+    'Zancada caminando': 'Avanza dando zancadas largas y fluidas, bajando rodillas a 90° y caminando activo.',
+    'Peso muerto a una pierna': 'Apoya un pie, inclínate hacia delante llevando la cadera atrás y eleva la pierna contraria recta hacia atrás.',
+    'Sentadilla búlgara asistida': 'Con un pie en un banco tras de ti, baja hasta 90° con la pierna delantera y sube manteniendo torso erguido.',
+    'Elevación de talones': 'De pie, sube y baja sobre las puntas de los pies sintiendo la contracción de gemelos.',
+    'Flexión con rodillas elevadas': 'Flexión apoyando rodillas en el suelo pero elevando ligeramente la cadera para aumentar rango en el core.',
+    'Jump squat': 'Baja en sentadilla y salta vertical explosi­vamente, aterriza suave y repite.',
+    'Goblet squat improvisado': 'Sujeta un objeto pesado frente al pecho, baja en sentadilla manteniendo codos cerca y sube con control.',
+    'Cossack squat': 'De pie separa piernas muy ancho, desliza lateralmente el peso a un lado manteniendo la otra pierna estirada.',
+    'Flexión declinada': 'Manos en superficie elevada y pies en el suelo, haz flexión para trabajar parte alta del pecho.',
+    'Remo con toalla con pie elevado': 'Ancla una toalla firme en superficie, tira usando remo a un brazo manteniendo pie de apoyo elevado para inestabilidad.',
+    'Fondos en banco con piernas elevadas': 'Manos en banco, pies en otro soporte más alto, baja cuerpo flexionando codos y sube apretando tríceps.',
+    'Hip Thrust a una pierna': 'Tumbado boca arriba, eleva cadera apoyando un pie y mantén la otra pierna recta en el aire.',
+    'Hip Thrust con banda': 'Como el thrust, pero con banda por encima de rodillas para mayor resistencia en abductores.',
+    'Hip Thrust en Smith': 'Realiza hip thrust en máquina Smith para mayor estabilidad en la barra y carga progresiva.',
+    'Hip Thrust con barra': 'Con una barra sobre caderas, apoya espalda alta en banco y eleva cadera apretando glúteos.',
+    'Abducción cadera máquina': 'En máquina específica, separa piernas contra resistencia manteniendo torso erguido.',
+    'Patada glúteo máquina': 'En máquina de polea baja, tira con la pierna hacia atrás manteniendo rodilla flexionada.',
+    'Patada glúteo en polea improvisada': 'Engancha toalla a polea baja y, en cuadrupedia, empuja la pierna hacia atrás.',
+    'Abducción con banda y salto': 'Coloca banda por encima de rodillas, haz salto lateral abriendo caderas activando glúteos.',
+    'Plancha lateral': 'Apoya antebrazo y canto del pie, mantén cuerpo alineado y eleva cadera manteniendo core contraído.',
+    'Hanging leg raises': 'Colgado de barra, eleva piernas juntas manteniendo rodillas rectas hasta 90° y baja controlando.',
+    'Jumping lunges': 'Alterna zancadas saltando y cambiando pierna de apoyo en cada salto.',
+    'Puente dinámico': 'Tumbado boca arriba, sube y baja cadera de forma controlada con ritmo constante.',
+    'Estiramiento psoas': 'Avanza una pierna en semi-zancada y empuja cadera hacia delante para estirar psoas.',
+    'Marcha en sitio': 'Levanta las rodillas alternas sin avanzar, mantén core activo.',
+    'Bird Dog': 'En cuadrupedia, extiende brazo y pierna contrarios, mantén core firme.',
+    'Sentadilla con banda': 'Párate con banda por encima de rodillas y realiza sentadilla manteniendo tensión en la banda.',
+    'Zancada estática con banda':'Con banda bajo el pie delantero y por encima de rodillas, baja zancada manteniendo resistencia.',
+    'Remo con banda': 'Pisa la banda, tira con ambos brazos hacia tu cintura manteniendo torso erguido.',
+    'Press hombros con banda': 'Pisa la banda y empuja hacia arriba con ambas manos hasta bloquear codos.',
+    'Dips en banco con banda': 'Como fondos en banco, pero con banda bajo tus caderas para resistencia extra.',
+    'Puente glúteo con banda': 'Boca arriba con banda sobre rodillas, eleva cadera apretando y separando ligeramente rodillas.',
+    'Patada glúteo con banda': 'En cuadrupedia con banda, empuja pierna hacia arriba manteniendo tensión lateral.',
+    'Abducción lateral con banda': 'De pie con banda por encima de rodillas, eleva lateralmente la pierna contra la banda.',
+    'Crunch con banda': 'Boca arriba, banda bajo pies, haz crunch elevando hombros manteniendo tensión.',
+    'Plancha con banda': 'Plancha alta con banda por encima de muñecas o rodillas para mayor activación.',
+    'Mountain climbers con banda': 'Con banda alrededor de pies, lleva rodillas alternas al pecho manteniendo core estable.',
+    'Jumping jacks con banda': 'Con banda por encima de rodillas, salta abriendo piernas y manos al nivel del pecho.',
+    'Thruster con banda': 'Con banda bajo pies y manos a hombro, baja en sentadilla y empuja hacia arriba estirando brazos.',
+    'Gato-vaca': 'En cuadrupedia, alterna arquear (vaca) e hundir (gato) la espalda para movilizar columna.',
+    '90/90': 'Sentado con piernas en ángulo 90°, mantén posición para mejorar movilidad de caderas.',
+    'Rotaciones de tronco':'De pie o sentado, gira el torso llevando manos a un lado y al otro con control.',
+    'Remo alto con banda': 'Pisa banda, tira con manos juntas hacia el pecho manteniendo codos altos.',
+    'Press militar con banda':'Pisa la banda, empuja de hombros hacia arriba con codos ligeramente delante del cuerpo.',
+    'Thruster con banda a una pierna': 'Como thruster, pero sosteniéndote sobre una pierna mientras empujas arriba.',
+    'V-Ups con banda': 'Tumbado con banda en pies y manos juntas, eleva torso y piernas formando V, manteniendo tensión.',
+    'Crunch bicicleta con banda': 'Crunch bicicleta tradicional añadiendo banda bajo pies para resistencia extra.',
+    'Burpees con salto y banda': 'Burpees normales con banda por encima de rodillas, saltando con resistencia lateral.',
+    'Estiramiento de psoas con banda': 'Semi-zancada con banda bajo pie trasero, empuja cadera hacia delante manteniendo tensión.',
+    'Puente dinámico con banda': 'Puente de glúteo con banda, eleva y baja cadera sin descansar, manteniendo tensión lateral.',
+    'Rotaciones dinámicas de cadera': 'De pie, manos en cadera, haz círculos amplios y controlados en ambas direcciones.',
+    'Prensa de piernas': 'En la máquina, empuja con pies la plataforma estirando piernas sin bloquear rodillas.',
+    'Curl femoral tumbado': 'En máquina de femorales, flexiona rodillas llevando talones hacia glúteos.',
+    'Extensión de cuádriceps': 'En máquina, extiende rodillas elevando el rodillo frente a tibias.',
+    'Jalón al pecho': 'En polea alta, tira barra al pecho manteniendo codos apuntando al suelo.',
+    'Press banca máquina': 'En máquina, empuja con ambas manos la barra desde el pecho hasta bloqueo de brazos.',
+    'Remo sentado': 'En máquina, tira manillar hacia tu abdomen manteniendo espalda recta.',
+    'Abducción cadera máquina':'En máquina de abductores, separa piernas contra la resistencia manteniendo tronco erguido.',
+    'Patada glúteo máquina': 'En máquina con plataforma baja, empuja con el pie la plataforma hacia atrás.',
+    'Crunch máquina': 'En máquina de abdominales, flexiona torso acercando pecho a rodillas manteniendo tensión.',
+    'Plancha en bosu': 'Plancha apoyado sobre bosu, mantén core firme y cuerpo recto.',
+    'Elevación de piernas colgado':'Colgado de barra, eleva piernas dobladas o rectas al pecho y baja controlado.',
+    'Kettlebell swing': 'Agárrate a kettlebell con ambas manos, balancea entre piernas y luego estira cadera explosivamente.',
+    'Burpee con caja': 'Haz burpee normal e impulsa salto sobre una caja de altura moderada.',
+    'Thruster con barra': 'Con barra apoyada en hombros, baja en sentadilla frontal y empuja sobre la cabeza.',
+    'Sentadilla en máquina hack':'En máquina hack, apoya espalda y empuja con pies plataforma estirando piernas.',
+    'Peso muerto rumano': 'Con barra o mancuernas, baja deslizando peso por piernas manteniendo rodillas ligeramente flexionadas.',
+    'Zancada búlgara con mancuernas': 'Con mancuernas en manos, apoya un pie atrás en banco y baja sentadilla con pierna delantera.',
+    'Press banca barra': 'En banco plano con barra, baja al pecho y empuja hasta bloqueo de brazos.',
+    'Dominadas asistidas': 'Con máquina o banda, realiza dominadas llevando pecho a la barra controlando la bajada.',
+    'Remo con barra T': 'Ancla barra en suelo, agárrala con V-bar y tira hacia el pecho manteniendo torso paralelo al suelo.',
+    'Abducción de cadera en máquina': 'Igual que “Abducción cadera máquina” anterior.',
+    'Patada glúteo en polea baja': 'Engancha tobillera en polea baja y empuja pierna hacia atrás con rodilla flexionada.',
+    'Crunch en banco declinado': 'En banco declinado, sujeta manos detrás de cabeza, flexiona torso hacia rodillas con control.',
+    'Levantamiento de rodillas en paralelas': 'En barra de paralelas, apoya antebrazos, eleva rodillas al pecho manteniendo torso erguido.',
+    'Clean and press': 'Levanta barra del suelo al hombro (clean) y de ahí empuja por encima de la cabeza (press).',
+    'Burpee con salto de cajón': 'Burpee normal cerrado con salto explosivo sobre caja tras él.',
+    'Rotación de columna en banco': 'Tumbado en banco lateral, deja caer piernas al lado opuesto para estirar la zona lumbar.',
+    'Estiramiento dinámico de isquiotibiales': 'De pie, balancea una pierna recta hacia delante y atrás controlando el movimiento.',
+    'Pistol squat asistida': 'Párate en un escalón o superficie elevada, apoya una mano en un punto fijo (silla o pared) para apoyo y extiende la otra pierna al frente. Flexiona la rodilla de la pierna de trabajo hasta que el muslo quede paralelo al suelo, mantén torso erguido y vuelve a subir empujando con el talón.',
+    'Sentadilla al aire': 'Párate con los pies al ancho de hombros, baja cadera como si te sentaras; mantén las rodillas alineadas con los dedos de los pies y sube apretando glúteos y cuádriceps.',
+    'Zancada estática': 'Da un paso largo hacia adelante y baja ambas rodillas hasta formar dos ángulos de 90°; empuja con el talón delantero para volver a la posición inicial manteniendo el core firme.',
+      // … (tus explicaciones actuales) …
+
+  'Abducción lateral con salto de banda':
+    'Coloca una banda por encima de las rodillas, haz un mini-salto lateral llevando las rodillas hacia afuera, mantén el core firme.',
+  'Burpee con salto':
+    'Desde posición de pie baja a plancha, haz un push-up, vuelve pies al pecho y salta explosivamente, aterriza suave.',
+  'Dips en banco':
+    'Apoya las manos en un banco detrás, estira piernas y baja flexionando codos pegados al torso, sube apretando tríceps.',
+  'Elevación de talones a una pierna':
+    'De pie, apoya un pie y eleva el talón de la otra pierna hasta contraer gemelo, baja controlado y alterna.',
+  'Elevación de talones con banda':
+    'Pisa una banda con ambos pies y, manteniendo tensión, sube y baja sólo con las puntas de los pies.',
+  'Estiramiento psoas':
+    'En semi-zancada profunda, adelanta cadera manteniendo espalda erguida hasta notar el estirón en la ingle.',
+  'Fondos en banco con banda':
+    'Manos en banco, banda bajo caderas para resistencia; baja flexionando codos y sube apretando tríceps.',
+  'Hip Thrust Mariposa':
+    'Boca arriba, plantas de pies juntas en mariposa; eleva cadera apretando glúteos y baja controlado.',
+  'Hip Thrust con pie en banco':
+    'Apoya un pie en banco, el otro en suelo; eleva cadera con carga (barra o peso), aprieta glúteos arriba.',
+  'Hip Thrust en Smith':
+    'En máquina Smith, apoya espalda alta en banco y empuja barra hacia arriba con cadera, baja suave.',
+  'Hip Thrust en una pierna con banda':
+    'Tumbado boca arriba, banda por encima de rodillas, eleva cadera apoyando un solo pie y aprieta glúteo.',
+  'Patada glúteo con banda y salto':
+    'Banda por encima de rodillas, en cuádrupeda extiende pierna y al volver haz un pequeño salto lateral.',
+  'Pistol squat asistida con banda':
+    'Con banda detrás del tobillo y apoyo en una silla, baja en sentadilla a una pierna y sube controlado.',
+  'Plancha con apoyo alterno':
+    'En posición de plancha alta, alterna levantar un brazo o una pierna manteniendo cuerpo recto y core contraído.',
+  'Plancha lateral':
+    'Apoya antebrazo y canto externo del pie, eleva cadera manteniendo línea recta de hombro a tobillo.',
+  'Plancha lateral con banda':
+    'Como la plancha lateral, pero con banda por encima de rodillas para mayor estabilización.',
+  'Press banca mancuernas':
+    'Tumbada en banco, empuja mancuernas desde el pecho hasta estirar brazos, controla la bajada.',
+  'Puente de glúteo con banda':
+    'Boca arriba, banda sobre rodillas; eleva cadera apretando glúteos y separa rodillas contra banda.',
+  'Puente de glúteo con una pierna':
+    'Misma posición, apoya un pie y eleva cadera estirando la pierna contraria al techo.',
+  'Puente glúteo con una pierna y banda':
+    'Boca arriba con banda, apoya un pie y extiende el otro al subir, aprieta glúteos arriba.',
+  'Sentadilla búlgara con banda':
+    'Pie trasero en banco, con banda bajo el pie delantero y manos al frente, baja a 90° y sube.',
+  'Sentadilla con salto':
+    'Baja en sentadilla explosiva y salta, aterriza suave en semiflexión para amortiguar impacto.',
+  'Sentadilla con salto con banda':
+    'Con banda por encima de rodillas, realiza sentadilla y tras subir haz un salto explosivo.',
+  'Thruster con peso corporal':
+    'Desde sentadilla frontal lleva manos a hombros al subir y estira brazos sobre cabeza.',
+  'Zancada búlgara':
+    'Pie trasero elevado, baja la delantera a 90° y sube empujando con talón delantero.',
+ 
+    // — Ejercicios de Casa sin material (faltantes) —
+    'Remo con toalla':'Colócate debajo de una barra o mesa firme, agárrala con ambas manos y tira del pecho hacia arriba manteniendo el cuerpo recto, trabaja espalda y bíceps.',
+    'Flexión de pared':'De pie frente a la pared, apoya manos al ancho de hombros y baja el torso controladamente hasta rozar la pared, vuelve a subir estirando brazos para activar pectoral.',
+    'Abducción mariposa': 'Tumbado boca arriba con plantas juntas (como mariposa), separa ligeramente rodillas para activar abductores y vuelve a la posición inicial.',
+    'Jumping Jacks suaves':'De pie, salta abriendo piernas y brazos de forma controlada, aterriza suave y repite para calentar cuerpo entero.',
+
+  // — Ejercicios de nivel Intermedio en Casa sin material —
+  'Zancada caminando': 'Avanza dando zancadas largas, baja rodillas a 90° y alterna piernas manteniendo el tronco erguido.',
+  'Peso muerto a una pierna': 'Apoya un pie, inclínate llevando la cadera atrás y la pierna opuesta recta atrás; sube apretando glúteos y isquiotibiales.',
+  'Sentadilla búlgara asistida': 'Con un pie sobre un banco detrás, baja la otra pierna a 90° y sube manteniendo el torso vertical, usa la asistencia de una silla si hace falta.',
+  'Elevación de talones': 'De pie, sube y baja sobre las puntas de los pies sintiendo la contracción de gemelos.',
+  'Flexión con rodillas elevadas': 'Apoya rodillas y manos en suelo, baja pecho manteniendo torso recto y sube estirando brazos; para más core, eleva ligeramente caderas.',
+  'Hip Thrust a una pierna': 'Tumbado boca arriba, planta un pie y eleva cadera estirando la pierna opuesta al techo, aprieta glúteos en la parte alta.',
+
+  // — Ejercicios de nivel Avanzado en Casa sin material —
+  'Burpees': 'Desde de pie, baja a plancha, haz un push-up, vuelve pies cerca de manos y salta explosivo al aire.',
+  'Mountain climbers': 'En plancha alta, lleva rodillas alternas al pecho rápida y controladamente para activar core y cardio.',
+  'Jump squat': 'Baja en sentadilla profunda y salta verticalmente lo más alto posible, aterriza suave y repite.',
+
+  // — Ejercicios de Habitacion con bandas —
+  'Remo con banda': 'Pisa la banda con ambos pies y tira de ella hacia la cintura manteniendo codos cerca del cuerpo, trabaja espalda.',
+  'Press hombros con banda': 'Pisa la banda y empuja las manos hacia arriba hasta estirar por completo los codos, activa hombros y tríceps.',
+  'Dips en banco con banda':'Manos en banco, banda bajo caderas para resistencia extra, flexiona codos y sube apretando tríceps.',
+  'Thruster con banda':'Con banda bajo pies, sujeta extremos a hombros; baja en sentadilla y empuja por encima de la cabeza al subir.',
+  'Jumping Jacks con banda':'Coloca banda encima de rodillas y haz jumping jacks, mantén tensión constante durante todo el ejercicio.',
+  'Rotaciones de cadera': 'De pie, manos en cintura, haz círculos amplios y controlados con la pelvis en ambas direcciones.',
+
+  // — Ejercicios de Gimnasio con máquinas —
+  'Plancha en bosu':'Coloca antebrazos sobre un bosu y mantén el cuerpo recto en plancha, aprieta core y glúteos.',
+  'Elevación de piernas colgado':'Colgado de una barra, eleva las piernas hacia el pecho manteniendo rodillas ligeramente dobladas y baja controlado.',
+  'Clean and press':'Levanta la barra del suelo hasta el hombro (clean) y luego empuja sobre la cabeza (press) de forma fluida.',
+  'Burpee con caja': 'Realiza un burpee normal e inmediatamente salta sobre una caja de altura moderada, controla la bajada.',
+  'Rotación de columna en banco': 'Tumbado de lado en banco, deja caer piernas al lado opuesto hasta estirar zona lumbar y vuelve al centro.',
+  'Estiramiento de psoas':'En semi-zancada, avanza cadera hacia delante manteniendo espalda recta hasta notar estiramiento profundo de psoas.',
+
+    // ... resto ...
+  };
+
+  let chartInstance;
+
+  document.addEventListener('DOMContentLoaded', ()=> {
+    const form          = document.getElementById('training-form');
+    const actDiv        = document.getElementById('activation-plan');
+    const mainDiv       = document.getElementById('main-plan');
+    const expDiv        = document.getElementById('express-plan');
+    const progDiv       = document.getElementById('progression-plan');
+    const chDiv         = document.getElementById('challenge-plan');
+    const output        = document.getElementById('output');
+    const saveBtn       = document.getElementById('save-session');
+    const toggleBtn     = document.getElementById('toggle-history');
+
+    // Toggle historial + chart
+    toggleBtn.addEventListener('click', ()=>{
+      const histDiv = document.getElementById('historial');
+      const chartCan = document.getElementById('progressChart');
+      if(histDiv.classList.contains('hidden')){
+        verHistorial();
+        updateChart();
+        histDiv.classList.remove('hidden');
+        chartCan.classList.remove('hidden');
+        toggleBtn.textContent = '📅 Ocultar historial';
+      } else {
+        histDiv.classList.add('hidden');
+        chartCan.classList.add('hidden');
+        toggleBtn.textContent = '📅 Mostrar historial';
+      }
+    });
+
+    // Sugerencia sesión anterior
+    verHistorial();
+    const prev = JSON.parse(localStorage.getItem('lastSession')||'null');
+    if(prev){
+      const alt = getAlternative(prev.goal);
+      document.getElementById('suggestion').innerHTML=`
+        <div class="bg-purple-200 p-3 rounded text-center mt-4">
+          👀 Ayer trabajaste <strong>${prev.goal}</strong>.<br>
+          Hoy te recomiendo <strong>${alt}</strong>.
+          <div class="mt-2">
+            <button onclick="prellenarSugerido('${alt}')" class="bg-green-500 px-2 py-1 rounded text-white mr-2">Aceptar</button>
+            <button onclick="alert('👌 Sugerido rechazado');" class="bg-gray-300 px-2 py-1 rounded text-black">Rechazar</button>
+          </div>
+        </div>`;
+    }
+    window.prellenarSugerido = goal => {
+  const form = document.getElementById('training-form');
+  // 1) Fija el nuevo objetivo
+  document.getElementById('goal').value = goal;
+  // 2) Oculta los selects ya cumplidos
+  document.getElementById('goal-group').style.display = 'none';
+  document.getElementById('location-group').style.display = 'none';
+  // 3) Oculta la sugerencia
+  document.getElementById('suggestion').style.display = 'none';
+  // 4) Dispara el submit del formulario para que ejecutar generatePlan() entera
+  form.requestSubmit();
+};
+
+
+    // Reto semanal
+    const retoLevels = {
+      1:'🔥 EMOM 5min: burpees + jumping jacks + abdominales',
+      2:'🔥 AMRAP 6min: zancadas + push-ups + escaladores',
+      3:'🔥 TABATA 8 rondas: burpees+sentadillas',
+      4:'🔥 EMOM 6min: flexiones+s.tijera+escaladores',
+      5:'🔥 AMRAP 7min: squats+abs+burpees'
+    };
+    let retoLevel = parseInt(localStorage.getItem('retoLevel'))||1;
+
+    // Generador de plan
+    function generatePlan(){
+      const location = document.getElementById('location').value;
+      const level    = document.getElementById('level').value;
+      const goal     = document.getElementById('goal').value;
+      const time     = +document.getElementById('time').value;
+      const energy   = +document.getElementById('energy').value;
+
+        // Activación
+      const activ = ['Respiración nasal profunda','Gato-vaca x10','Bird Dog 3x12','90/90 x30s','Plancha rodillas 3x20s','Marcha en sitio 3x30s'];
+      const nAct  = time <= 15 ? 2 : time <= 30 ? 4 : activ.length;
+      actDiv.innerHTML = `
+  <h3 class="text-lg font-semibold text-purple-600">🧘 Activación inicial</h3>
+  <ul class="list-disc ml-5 mt-2">
+    ${activ.slice(0,nAct).map(ex=>`
+      <li>${ex}
+        <button onclick="
+          const parts = '${ex}'.split(' ');
+          const base  = parts.slice(0,-1).join(' ');
+          alert(exerciseInfo['${ex}'] || exerciseInfo[base] || 'Explicación próximamente')
+        " class="underline text-blue-500 ml-2 text-sm">ℹ️</button>
+      </li>`).join('')}
+  </ul>`;
+
+
+      // Principal
+  // 1) Soporta sugerencias compuestas
+  let goals = [ goal ];
+  if (goal.includes('+')) {
+    goals = goal.split('+').map(g => g.trim());
+  } else if (goal.includes(' o ')) {
+    goals = goal.split(' o ').map(g => g.trim());
+  }
+  // 2) Normaliza el casing para que coincida con las claves de exerciseBankEnv
+  const keyList = Object.keys(exerciseBankEnv[location][level]);
+  const matchedGoals = goals.map(g =>
+    keyList.find(k => k.toLowerCase() === g.toLowerCase()) || g
+  );
+  // 3) Construye el pool concatenando todos los objetivos encontrados
+  const pool = matchedGoals.reduce((all, k) =>
+    all.concat(exerciseBankEnv[location][level][k] || []), []);
+
+  // 4) Selección de ejercicios
+  let sel;
+  if (goals.length === 1 && goal === 'Cuerpo entero' && time > 30) {
+    // un ejercicio de cada categoría para sesiones largas de cuerpo entero
+    sel = Object
+      .keys(exerciseBankEnv[location][level])
+      .map(cat => shuffle(exerciseBankEnv[location][level][cat])[0]);
+  } else {
+    // número de ejercicios según tiempo (hasta 60 min)
+    const cnt = time <= 15 
+              ? 2 
+              : time <= 30 
+                ? 3 
+                : time <= 45 
+                  ? 4 
+                  : 6;
+    sel = shuffle(pool).slice(0, cnt);
+  }
+
+ mainDiv.innerHTML = `
+  <h3 class="text-lg text-pink-500 font-semibold">💪 Entrenamiento principal</h3>
+  <ul class="list-disc ml-5 mt-1">
+    ${sel.map(ex=>`
+      <li>${ex}
+        <button onclick="
+          const parts = '${ex}'.split(' ');
+          const base  = parts.slice(0,-1).join(' ');
+          alert(exerciseInfo['${ex}'] || exerciseInfo[base] || 'Explicación próximamente')
+        " class="text-pink-300 hover:text-pink-500">ℹ️</button>
+      </li>`).join('')}
+  </ul>`;
+
+
+      // Checklist
+      document.getElementById('exercise-checklist').innerHTML =
+        sel.map(ex => `<label><input type="checkbox" value="${ex}" class="mr-1"> ${ex}</label><br>`).join('');
+
+      // Express
+      const exp = shuffle(pool).slice(0, 2);
+      expDiv.innerHTML = `
+        <h3 class="text-lg text-pink-500 font-semibold">⚡ Express</h3>
+        <ul class="list-disc ml-5 mt-1">
+          ${exp.map(ex => `<li>${ex}</li>`).join('')}
+        </ul>`;
+
+      // Progresión
+      progDiv.innerHTML = `
+        <h3 class="text-lg text-green-600 font-semibold">📈 Progresión</h3>
+        <p>Repite en 3 días añadiendo 1 serie o mejorando control.</p>`;
+
+      // Reto
+      if(energy>=4){
+        chDiv.innerHTML = `
+          <h3 class="text-lg text-red-600 font-semibold">💥 Reto: Operación Explosiva</h3>
+          <p class="italic">“Resultados, no excusas.”</p>
+          <p class="mt-2">${retoLevels[retoLevel]}</p>
+          <button id="reto-ok" class="mt-3 bg-red-500 text-white px-3 py-1 rounded">✅ Lo hice</button>
+          <button id="reto-no" class="ml-2 mt-3 bg-gray-300 text-black px-3 py-1 rounded">❌ No hoy</button>`;
+        document.getElementById('reto-ok').onclick=()=>{
+          retoLevel = Math.min(retoLevel+1,Object.keys(retoLevels).length);
+          localStorage.setItem('retoLevel',retoLevel);
+          alert('🔥 Reto completado!');
+        };
+        document.getElementById('reto-no').onclick=()=>alert('👌 Otro día.');
+      } else {
+        chDiv.innerHTML = '';
+      }
+
+      // Mostrar + guardar
+      output.classList.remove('hidden');
+      saveBtn.onclick=()=>{
+        localStorage.setItem('lastSession',JSON.stringify({goal,level,location,energy,time,date:new Date().toISOString()}));
+        alert('✅ Sesión guardada.');
+      };
+    }
+
+    form.addEventListener('submit', e=>{
+      e.preventDefault();
+      generatePlan();
+    });
+
+    // Feedback
+    document.getElementById('save-feedback').onclick=()=>{
+      const feeling = document.getElementById('feeling').value.split(' - ')[0];
+      const completed = Array.from(document.querySelectorAll('#exercise-checklist input:checked'))
+                             .map(i=>i.value).join(', ');
+      const hist = JSON.parse(localStorage.getItem('history')||'[]');
+      hist.push({date:new Date().toISOString(),completed,feeling:+feeling});
+      localStorage.setItem('history',JSON.stringify(hist));
+      alert('✅ Feedback guardado');
+      verHistorial();
+      updateChart();
+    };
+
+    // Init chart
+    function updateChart(){
+      const hist = JSON.parse(localStorage.getItem('history')||'[]');
+      const labels = hist.map(h=>new Date(h.date).toLocaleDateString());
+      const data = hist.map(h=>h.feeling);
+      const ctx = document.getElementById('progressChart').getContext('2d');
+      if(chartInstance) {
+        chartInstance.data.labels = labels;
+        chartInstance.data.datasets[0].data = data;
+        chartInstance.update();
+      } else {
+        chartInstance = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Estado post-entreno (1-5)',
+              data,
+              fill: false,
+              tension: 0.1
+            }]
+          },
+          options: {
+            scales: {
+              y: { beginAtZero: true, min:1, max:5 }
+            }
+          }
+        });
+      }
+    }
+  });
+
+  // Historial
+  function verHistorial(){
+    const hist = JSON.parse(localStorage.getItem('history')||'[]');
+    const cont = document.getElementById('historial');
+    cont.innerHTML = hist.length
+      ? hist.map((h,i)=>`
+          <div class="mb-2 border-b border-pink-300 pb-2">
+            <strong>${new Date(h.date).toLocaleString()}</strong><br>
+            <span>✅ Ejercicios: ${h.completed||'—'}</span><br>
+            <span>💬 Estado: ${h.feeling}/5</span><br>
+            <button onclick="borrarSesion(${i})" class="text-red-400 text-sm underline mt-1">🗑️ Borrar</button>
+          </div>`).join('')
+      : '<p>No hay sesiones guardadas aún.</p>';
+  }
+  function borrarSesion(idx){
+    const h=JSON.parse(localStorage.getItem('history')||'[]');
+    h.splice(idx,1);
+    localStorage.setItem('history',JSON.stringify(h));
+    verHistorial();
+    if(window.updateChart) updateChart();
+  }
+  function exportarMemoria(){
+    const data={history:JSON.parse(localStorage.getItem('history')||'[]'),lastSession:localStorage.getItem('lastSession')};
+    const blob=new Blob([JSON.stringify(data)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download='memoria.json'; a.click();
+  }
+  function importarMemoria(){
+    const f=document.getElementById('importador').files[0];
+    if(!f) return alert('Selecciona un JSON primero.');
+    const r=new FileReader();
+    r.onload=()=>{
+      try{
+        const d=JSON.parse(r.result);
+        if(d.history)     localStorage.setItem('history',JSON.stringify(d.history));
+        if(d.lastSession) localStorage.setItem('lastSession',d.lastSession);
+        alert('✅ Importado correctamente.');
+        verHistorial();
+        if(window.updateChart) updateChart();
+      }catch{
+        alert('❌ JSON inválido.');
+      }
+    };
+    r.readAsText(f);
+  }
+  </script>
+</body>
+</html>
